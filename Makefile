@@ -112,6 +112,11 @@ include $(MODULES_DIR)/shared.mk
 include $(MODULES_DIR)/terraform.mk
 
 # ============================================
+# Terraform 설정 오버라이드 (local backend for demo)
+# ============================================
+unexport TF_CLI_ARGS_init
+
+# ============================================
 # 프로젝트 고유 타겟 (terraform.mk 활용)
 # ============================================
 .PHONY: build
