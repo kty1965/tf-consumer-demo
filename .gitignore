@@ -1,0 +1,20 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+tf_plans/
+
+# Auto-download 모드 (make/ 디렉토리 무시)
+make/*.mk
+make/*-checksums.txt
+
+# Vendoring 모드 (vendor/ 디렉토리는 커밋)
+# vendor/make/ 는 .gitignore에 포함하지 않음
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
