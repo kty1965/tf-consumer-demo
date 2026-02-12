@@ -115,6 +115,9 @@ include $(MODULES_DIR)/terraform.mk
 # Terraform 설정 오버라이드 (local backend for demo)
 # ============================================
 unexport TF_CLI_ARGS_init
+unexport TF_CLI_ARGS_plan
+unexport TF_CLI_ARGS_apply
+unexport TF_CLI_ARGS_destroy
 
 # ============================================
 # 프로젝트 고유 타겟 (terraform.mk 활용)
