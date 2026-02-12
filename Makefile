@@ -13,12 +13,12 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "v0.
 # ============================================
 # 공유 모듈 버전 설정 (모듈별 독립)
 # ============================================
-TERRAFORM_MODULE_VERSION := v1.1.0
-SHARED_MODULE_VERSION := v1.1.0
+TERRAFORM_MODULE_VERSION := v1.3.0
+SHARED_MODULE_VERSION := v1.3.0
 
-# 모듈별 태그 및 URL (실제 태그 형식에 맞춤)
-TERRAFORM_TAG := terraform-v$(TERRAFORM_MODULE_VERSION)
-SHARED_TAG := shared-v$(SHARED_MODULE_VERSION)
+# 모듈별 태그 (수정된 형식: terraform-v1.3.0)
+TERRAFORM_TAG := terraform-$(TERRAFORM_MODULE_VERSION)
+SHARED_TAG := shared-$(SHARED_MODULE_VERSION)
 
 TERRAFORM_URL := https://github.com/kty1965/makefile-modules/releases/download/$(TERRAFORM_TAG)
 SHARED_URL := https://github.com/kty1965/makefile-modules/releases/download/$(SHARED_TAG)
@@ -142,19 +142,26 @@ help: ## Show this help
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
-	@echo "Targets:"
-	@grep -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	@echo "Project Targets:"
+	@grep -E '^[a-zA-Z_/-]+:.*?## .*$$' Makefile | \
 	  grep -v '^tf/' | \
 	  grep -v '^modules/' | \
 	  sort | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Terraform Targets:"
-	@grep -E '^tf/[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	@echo "Terraform Targets (from terraform.mk):"
+	@grep -E '^\.PHONY: (tf/.*)$$' $(MODULES_DIR)/terraform.mk | \
+	  sed 's/.PHONY: //' | \
+	  while read target; do \
+	    desc=$$(grep "^$$target:.*## " $(MODULES_DIR)/terraform.mk | sed 's/.*## //'); \
+	    printf "  \033[36m%-25s\033[0m %s\n" "$$target" "$$desc"; \
+	  done | sort
+	@echo ""
+	@echo "Module Management:"
+	@grep -E '^modules/[a-zA-Z_-]+:.*?## .*$$' Makefile | \
 	  sort | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Module Management:"
-	@grep -E '^modules/[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-	  sort | \
-	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}'
+	@echo "Module Versions:"
+	@echo "  terraform.mk: $(TERRAFORM_MODULE_VERSION)"
+	@echo "  shared.mk: $(SHARED_MODULE_VERSION)"
