@@ -32,10 +32,8 @@ USE_VENDOR ?= 0
 
 ifeq ($(USE_VENDOR),1)
   MODULES_DIR := vendor/make
-  $(info 📦 Using vendored modules from $(MODULES_DIR))
 else
   MODULES_DIR := make
-  $(info 🌐 Using auto-download mode)
 endif
 
 # ============================================
@@ -46,7 +44,15 @@ make/terraform.mk:
 	@echo "📦 Downloading terraform.mk $(TERRAFORM_MODULE_VERSION)..."
 	@curl -fsSL $(TERRAFORM_URL)/terraform.mk -o $@
 	@curl -fsSL $(TERRAFORM_URL)/checksums.txt -o make/terraform-checksums.txt
-	@cd make && grep "terraform.mk" terraform-checksums.txt | sha256sum -c -
+	@expected=$$(grep "terraform.mk" make/terraform-checksums.txt | awk '{print $$1}'); \
+	 actual=$$(sha256sum $@ | awk '{print $$1}'); \
+	 if [ "$$expected" != "$$actual" ]; then \
+	   echo "❌ Checksum mismatch for terraform.mk"; \
+	   echo "  expected: $$expected"; \
+	   echo "  actual:   $$actual"; \
+	   rm -f $@; \
+	   exit 1; \
+	 fi
 	@echo "✅ Verified terraform.mk"
 
 make/shared.mk:
@@ -54,7 +60,15 @@ make/shared.mk:
 	@echo "📦 Downloading shared.mk $(SHARED_MODULE_VERSION)..."
 	@curl -fsSL $(SHARED_URL)/shared.mk -o $@
 	@curl -fsSL $(SHARED_URL)/checksums.txt -o make/shared-checksums.txt
-	@cd make && grep "shared.mk" shared-checksums.txt | sha256sum -c -
+	@expected=$$(grep "shared.mk" make/shared-checksums.txt | awk '{print $$1}'); \
+	 actual=$$(sha256sum $@ | awk '{print $$1}'); \
+	 if [ "$$expected" != "$$actual" ]; then \
+	   echo "❌ Checksum mismatch for shared.mk"; \
+	   echo "  expected: $$expected"; \
+	   echo "  actual:   $$actual"; \
+	   rm -f $@; \
+	   exit 1; \
+	 fi
 	@echo "✅ Verified shared.mk"
 
 # ============================================
@@ -72,8 +86,12 @@ vendor: ## Download modules to vendor/ directory (commit to Git)
 	@echo "  Downloading shared.mk..."
 	@curl -fsSL $(SHARED_URL)/shared.mk -o vendor/make/shared.mk
 	@curl -fsSL $(SHARED_URL)/checksums.txt -o vendor/make/shared-checksums.txt
-	@cd vendor/make && grep "terraform.mk" terraform-checksums.txt | sha256sum -c -
-	@cd vendor/make && grep "shared.mk" shared-checksums.txt | sha256sum -c -
+	@expected=$$(grep "terraform.mk" vendor/make/terraform-checksums.txt | awk '{print $$1}'); \
+	 actual=$$(sha256sum vendor/make/terraform.mk | awk '{print $$1}'); \
+	 if [ "$$expected" != "$$actual" ]; then echo "❌ Checksum mismatch for terraform.mk"; exit 1; fi
+	@expected=$$(grep "shared.mk" vendor/make/shared-checksums.txt | awk '{print $$1}'); \
+	 actual=$$(sha256sum vendor/make/shared.mk | awk '{print $$1}'); \
+	 if [ "$$expected" != "$$actual" ]; then echo "❌ Checksum mismatch for shared.mk"; exit 1; fi
 	@echo "✅ All modules vendored and verified"
 	@echo ""
 	@echo "Next steps:"
@@ -92,8 +110,7 @@ modules/clean: ## Clean downloaded modules
 .PHONY: modules/update
 modules/update: modules/clean ## Update modules to latest version
 	@echo "🔄 Updating modules..."
-	@$(MAKE) $(MODULES_DIR)/terraform.mk
-	@$(MAKE) $(MODULES_DIR)/shared.mk
+	@$(MAKE) $(MODULES_DIR)/terraform.mk $(MODULES_DIR)/shared.mk
 	@echo "✅ Modules updated"
 
 .PHONY: modules/version
@@ -104,12 +121,17 @@ modules/version: ## Show current module versions
 	@echo ""
 	@echo "Using vendored: $(USE_VENDOR)"
 	@echo "Modules directory: $(MODULES_DIR)"
+	@if [ "$(USE_VENDOR)" = "1" ]; then \
+	  echo "Mode: 📦 vendored"; \
+	else \
+	  echo "Mode: 🌐 auto-download"; \
+	fi
 
 # ============================================
 # 모듈 포함
 # ============================================
-include $(MODULES_DIR)/shared.mk
-include $(MODULES_DIR)/terraform.mk
+-include $(MODULES_DIR)/shared.mk
+-include $(MODULES_DIR)/terraform.mk
 
 # ============================================
 # Terraform 설정 오버라이드 (local backend for demo)
